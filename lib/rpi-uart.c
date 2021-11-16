@@ -5,7 +5,7 @@ int init_uart_driver(int baud_rate, int word_len, int stop_bits, int parity) {
     int fd = -1;
     rpi_uart_addresses = malloc(sizeof(uart));
 
-    uint32_t* base_address = 0x3f201000;
+    unsigned int base_address = 0x3f201000;
 
     if ((fd = open("/dev/mem", O_RDWR, 0)) == -1) {
         printf("Error opening /dev/mem\n");
@@ -84,7 +84,7 @@ void set_uart_addresses() {
 int set_baud_rate(int baud_rate) {
     unsigned long integer_part_divisor =
         (unsigned long)48000000 / (16 * baud_rate);
-    unsigned float float_part =
+    float float_part =
         integer_part_divisor - ((unsigned long)48000000 / (16 * baud_rate));
     unsigned long float_part_divisor = (unsigned long)(float_part * 64 + 0.5);
 
@@ -178,19 +178,43 @@ int set_parity(int parity) {
 }
 
 void enable_uart() {
+    *(rpi_uart_addresses->interrupt_mask_clear_register) |= (1<<5);
+    *(rpi_uart_addresses->interrupt_mask_clear_register) |= (1<<4); 
     *(rpi_uart_addresses->control_register) |= 1;
-    *(rpi_uart_addresses->control_register) |= (3 << 8);
+    *(rpi_uart_addresses->control_register) |= (1 << 9);
+    *(rpi_uart_addresses->control_register) |= (1 << 8);
+    
 }
 
 void send_data(unsigned int data) {
-    *(rpi_uart_addresses->data_register) = 0;
-    *(rpi_uart_addresses->data_register) |= data & (0xFF);
+
+    *(rpi_uart_addresses->control_register) &= ~(1<<9);
+    *(rpi_uart_addresses->control_register) |= (1<<8);
+    while (*(rpi_uart_addresses->flag_register) & 0x20 != 0x20);
+    *(rpi_uart_addresses->data_register) = data & (0xFF);
+    while (*(rpi_uart_addresses->flag_register) &(1<<3)!=8);
 }
 
 uint8_t read_data() {
-    while ((*(rpi_uart_addresses->raw_interrupt_register) >> 5) & 0xF != 1)
-        ;
+    *(rpi_uart_addresses->control_register) &= ~(1<<8);
+    *(rpi_uart_addresses->control_register) |= (1<<9);
+    while (*(rpi_uart_addresses->masked_interrupt_register)&(1<<5)!= 0x20);
+    printf("La interrupcion esta en -> %i\n", (*(rpi_uart_addresses->masked_interrupt_register)));
+    printf("La mascara esta en -> %i\n", (*(rpi_uart_addresses->interrupt_mask_clear_register)));
 
-    *(rpi_uart_addresses->interrupt_clear_register) |= 1 << 5;
-    return (uint8_t) * (rpi_uart_addresses->data_register) & 0xFF;
+
+    
+    
+    *(rpi_uart_addresses->interrupt_clear_register) = 0x7FF;
+
+    printf("La interrupcion esta en -> %i\n", (*(rpi_uart_addresses->masked_interrupt_register)));
+
+    uint8_t character = (uint8_t) (*(rpi_uart_addresses->data_register) & 0xFF);
+    printf("Valor leido %i\n", *(rpi_uart_addresses->data_register));
+
+    *(rpi_uart_addresses->data_register) &= ~(0xFF);
+    printf("Valor regsitro limpiado %i\n", *(rpi_uart_addresses->data_register));
+
+
+    return character;
 }

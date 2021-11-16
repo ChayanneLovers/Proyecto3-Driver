@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.16)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include)
+
+set(LIBRARY_NAME rpiuart)
+set(SRC_FILES rpi-uart.c)
+set(INCLUDE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../include/rpi-uart.h)
+
+add_library(${LIBRARY_NAME} SHARED ${SRC_FILES} ${INCLUDE_FILES})
+
+install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
+install(FILES ${INCLUDE_FILES} DESTINATION include)

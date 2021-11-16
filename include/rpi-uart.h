@@ -1,6 +1,11 @@
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/mman.h>
+#include <stdio.h>
+#include <sys/mman.h> //mmap
+#include <err.h> //error handling
+#include <fcntl.h> //file ops
+#include <unistd.h> //usleep
+
 
 unsigned long uart_frequency = 48000000;
 typedef struct {
@@ -29,7 +34,7 @@ int init_uart_driver();
 
 void exit_uart_driver();
 
-int set_baud_rate(baud_rate);
+int set_baud_rate(int baud_rate);
 
 int set_word_len(int word_len);
 
@@ -42,3 +47,12 @@ int set_parity(int parity);
 void enable_uart();
 
 void send_data(unsigned int data);
+uint8_t read_data();
+
+void stop_send();
+
+void start_send();
+
+void start_reading();
+
+void stop_reading();
