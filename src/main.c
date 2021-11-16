@@ -4,18 +4,16 @@
 
 int main(){
 
-    init_uart_driver(115200, 8, 1, -1);
+    init_uart_driver(115200);
     struct timespec t;
     t.tv_nsec = 0;
-    t.tv_sec = 2;
+    t.tv_sec = 1;
     
 
     while (1){
-        char r = (unsigned char) read_data();
-
-        printf("%c\n", r);
-        nanosleep(&t, NULL);
+        char r = 'G';
         send_data((unsigned int)r);
+        nanosleep(&t, NULL);
     }
     
 
