@@ -29,25 +29,19 @@ typedef struct {
     volatile uint32_t* intergration_test_output_register;
     volatile uint32_t* data_test_register;
 } uart;
-
-int init_uart_driver();
+int init_uart_driver(int baud_rate);
 
 void exit_uart_driver();
 
 int set_baud_rate(int baud_rate);
 
-int set_word_len(int word_len);
-
 void set_uart_addresses();
 
-int set_fifo(int mode);
-int set_stop_bits(int stop_bits);
-int set_parity(int parity);
 
 void enable_uart();
 
 void send_data(unsigned int data);
-uint8_t read_data();
+int read_data();
 
 void stop_send();
 
