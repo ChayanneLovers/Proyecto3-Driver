@@ -6,7 +6,7 @@ int init_uart_driver(int baud_rate)
     int fd = -1;
     rpi_uart_addresses = malloc(sizeof(uart));
 
-    unsigned int base_address = 0x3f215040;
+    unsigned int base_address = 0x3f215000;
 
     if ((fd = open("/dev/mem", O_RDWR, 0)) == -1)
     {
@@ -15,6 +15,8 @@ int init_uart_driver(int baud_rate)
     }
     rpi_uart_addresses->base = (uint32_t *)mmap(
         0, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_address);
+
+    rpi_uart_addresses->base += (0x40/4); 
 
     if (rpi_uart_addresses->base == MAP_FAILED)
     {
@@ -33,6 +35,8 @@ int init_uart_driver(int baud_rate)
     }
     *(rpi_uart_addresses->AUX_MU_IIR_REG) = 0x3;
     *(rpi_uart_addresses->AUX_MU_CNTL_REG) = 0x3;
+
+    *(rpi_uart_addresses->base - (0x40/4) + (0x4/4)) = 0x1;
 
     return 0;
 }
