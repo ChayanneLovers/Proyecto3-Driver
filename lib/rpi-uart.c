@@ -6,6 +6,8 @@ int init_uart_driver(int baud_rate) {
     rpi_uart_addresses = malloc(sizeof(uart));
 
     unsigned int base_address = 0x3f201000;
+    unsigned int base_address_gpio = 0x3f200000;
+
 
     if ((fd = open("/dev/mem", O_RDWR, 0)) == -1) {
         printf("Error opening /dev/mem\n");
@@ -13,17 +15,24 @@ int init_uart_driver(int baud_rate) {
     }
     rpi_uart_addresses->base = (uint32_t*)mmap(
         0, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_address);
+    volatile uint32_t* gpio_r= (uint32_t*)mmap(
+        0, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_address_gpio);
 
-    if (rpi_uart_addresses->base == MAP_FAILED) {
+    if (rpi_uart_addresses->base == MAP_FAILED | gpio_r == MAP_FAILED) {
         printf("Error during mapping UART\n");
         return -1;
     }
+
+    volatile uint32_t* gpfsel1 =gpio_r + 1;
+
+    printf("El gpio esta en %i\n", (*gpfsel1)&0xFF000);
+    *gpfsel1 |= 0x24000;
 
     set_uart_addresses();
    
 
     *(rpi_uart_addresses->control_register) &= 0xFFFFFFF0; 
-    *(rpi_uart_addresses->control_register) |= 0x200;
+    *(rpi_uart_addresses->control_register) |= 0x300;
     *(rpi_uart_addresses->interrupt_clear_register) |= 0xFF;
     *(rpi_uart_addresses->line_control_register) &= 0xFFFFFF6F;
     
@@ -34,7 +43,6 @@ int init_uart_driver(int baud_rate) {
         return -1;
     }
     enable_uart();
-    printf("El registro de mascaraa de seteo es -> %u\n", *(rpi_uart_addresses->interrupt_mask_clear_register));
     *(rpi_uart_addresses->intergration_test_output_register) |= 400;
     return 0;
 }
@@ -104,22 +112,18 @@ void exit_uart_driver() { free(rpi_uart_addresses); }
 
 
 void enable_uart() {
-    *(rpi_uart_addresses->masked_interrupt_register) |= 0x50;
+    *(rpi_uart_addresses->interrupt_mask_clear_register) |= 0x50;
     *(rpi_uart_addresses->control_register) |= 0x1;
 }
 
 void send_data(unsigned int data) {
-    *(rpi_uart_addresses->data_register) = data&0xFF;
-    while (*(rpi_uart_addresses->flag_register)&(1<<7) != 1<<7);
-    while (*(rpi_uart_addresses->flag_register)&(1<<3) != 1<<3);
+    *(rpi_uart_addresses->data_register) = data;
 }
 
 
 int read_data() {
-    
-    while (*(rpi_uart_addresses->raw_interrupt_register) != 0x20);
-     
-    
+    *(rpi_uart_addresses->intergration_test_output_register);
+    while ((*(rpi_uart_addresses->masked_interrupt_register)) != 0x20);
     int character = *(rpi_uart_addresses->data_register);
     *(rpi_uart_addresses->interrupt_clear_register) |= 0x20;
     

@@ -1,5 +1,6 @@
 #include "rpi-uart.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 int main(){
@@ -8,16 +9,96 @@ int main(){
     struct timespec t;
     t.tv_nsec = 0;
     t.tv_sec = 2;
-    
+    int light = 0;
+    int moisture = 0;
+    int temp = 0;
+    int humity = 0;
     int i = 0;
-    while (i!=1000000){
-        char r = (char) read_data();
-        printf("%c\n", r);
-        if (r == '\n'){
-            break;
+    int mode = 0;
+    char r;
+    //send_data(4);
+    while (1){
+        r = (char) read_data();
+        if (mode  == 0){
+            if (r == 'L'){
+                mode = 1;
+                i++;
+                light = 0;
+                printf("Modo Luz \n");
+                continue;
+            }else if (r == 'S')
+            {
+                i++;
+                moisture = 0;
+                mode = 2;
+                printf("Modo Suelo \n");
+                continue;
+            }else if (r == 'H')
+            {
+                i++;
+                humity = 0;
+                mode = 3;
+                printf("Modo Humedad \n");
+                continue;
+            }else if (r == 'T')
+            {
+                i++;
+                temp = 0;
+                mode = 4;
+                printf("Modo Temp \n");
+                continue;
+            }else if (r == '\n'){
+                mode = 0;
+                if (i != 0){
+                    break;
+                }
+            }
+            
+        }else if (mode == 1){
+            if (r == ' '){
+                mode = 0;
+                continue;
+            }
+            int tmp = atoi(&r);
+            light = light*10 + tmp;
+            printf("Modo Luz leyo -> %i\n", tmp);
+            continue;
         }
-        i++;
+        else if (mode == 2){
+            if (r == ' '){
+                mode = 0;
+                continue;
+            }
+            int tmp = atoi(&r);
+            moisture = moisture*10 + tmp;
+            printf("Modo suelo leyo -> %i\n", tmp);
+
+            continue;
+        }else if (mode == 3){
+            if (r == ' '){
+                mode = 0;
+                continue;
+            }
+            int tmp = atoi(&r);
+            humity = humity*10 + tmp;
+            printf("Modo humedad leyo -> %i\n", tmp);
+
+            continue;
+        }
+        else if (mode == 4){
+            if (r == ' '){
+                mode = 0;
+                continue;
+            }
+            int tmp = atoi(&r);
+            temp = temp*10 + tmp;
+            printf("Modo temp leyo -> %i\n", tmp);
+
+            continue;
+        }
     }
+    
+    printf("{\"soilhum\":%i, \"lum\":%i, \"temp\":%i, \"hum\":%i}\n", moisture, light, temp, humity);
     
 
     return 0;

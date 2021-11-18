@@ -15,7 +15,6 @@ if (CMAKE_CROSSCOMPILING)
 target_link_libraries(main_uart rpiuart)
 
 install (TARGETS main_uart DESTINATION bin)
-install (TARGETS rpiuart DESTINATION lib)
-install (FILES include/rpi-uart.h DESTINATION include)
+
 
 endif (CMAKE_CROSSCOMPILING)
