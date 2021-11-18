@@ -7,6 +7,8 @@ int init_uart_driver(int baud_rate)
     rpi_uart_addresses = malloc(sizeof(uart));
 
     unsigned int base_address = 0x3f215000;
+    unsigned int base_address_gpio = 0x3f200000;
+
 
     if ((fd = open("/dev/mem", O_RDWR, 0)) == -1)
     {
@@ -15,6 +17,19 @@ int init_uart_driver(int baud_rate)
     }
     rpi_uart_addresses->base = (uint32_t *)mmap(
         0, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_address);
+
+    volatile uint32_t* gpio_r= (uint32_t*)mmap(
+        0, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, base_address_gpio);
+
+    volatile uint32_t* gpfsel1 =gpio_r + 1;
+    *gpfsel1 &= ~(0xEF000);
+    *gpfsel1 |= 0x12000;
+
+
+    if (rpi_uart_addresses->base == MAP_FAILED | gpio_r == MAP_FAILED) {
+        printf("Error during mapping UART\n");
+        return -1;
+    }
 
     rpi_uart_addresses->base += (0x40/4); 
 
@@ -71,22 +86,21 @@ int set_baud_rate(int baud_rate)
 
 void exit_uart_driver() { free(rpi_uart_addresses); }
 
-void send_data(unsigned int data)
+void send_data(char data)
 {
 
-    *(rpi_uart_addresses->AUX_MU_IO_REG) |= (data & 0xFF);
-    while ((*(rpi_uart_addresses->AUX_MU_STAT_REG) >> 24) & 0xF != 0)
+    *(rpi_uart_addresses->AUX_MU_IER_REG) |= 0x4;
+    *(rpi_uart_addresses->AUX_MU_IO_REG) = data;
+    while (*(rpi_uart_addresses->AUX_MU_IER_REG) != 195);
         ;
+    *(rpi_uart_addresses->AUX_MU_IER_REG) |= 0x4;
 }
 
-char *read_data()
+char read_data()
 {
-    int number_messages = (*(rpi_uart_addresses->AUX_MU_STAT_REG) >> 16) & 0xF;
-    char *string_received = malloc(sizeof(char) * number_messages + 1);
-    for (int i = 0; i < number_messages; i++)
-    {
-        string_received[i] = (char)(*(rpi_uart_addresses->AUX_MU_IO_REG) & 0xFF);
-    }
-    string_received[number_messages] = 0;
-    return string_received;
+       
+   while (*(rpi_uart_addresses->AUX_MU_IER_REG) != 196);
+    char result = (char)(*(rpi_uart_addresses->AUX_MU_IO_REG));
+    *(rpi_uart_addresses->AUX_MU_IER_REG) |= 0x2; //0 000000  00000 0 000  0 00 0010
+    return result;
 }

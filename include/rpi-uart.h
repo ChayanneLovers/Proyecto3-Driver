@@ -34,7 +34,7 @@ int set_baud_rate(int baud_rate);
 void set_uart_addresses();
 
 
-void send_data(unsigned int data);
-char* read_data();
+void send_data(char data);
+char read_data();
 
 
